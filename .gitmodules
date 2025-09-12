@@ -1,0 +1,6 @@
+[submodule "ros2-ar4-ws"]
+	path = ros2-ar4-ws
+	url = https://github.com/kwangchae/ros2-ar4-ws.git
+[submodule "unity-ar4-sim"]
+	path = unity-ar4-sim
+	url = https://github.com/kwangchae/unity-ar4-sim.git
