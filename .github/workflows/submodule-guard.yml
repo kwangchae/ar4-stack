@@ -1,0 +1,73 @@
+name: Submodule Pointer Guard
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    env:
+      STRICT_MODE: ${{ startsWith(github.head_ref, 'release/') && 'true' || 'false' }}
+    steps:
+      - name: Checkout repo with submodules
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Verify submodule pointers are pushed (and tagged in strict mode)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "STRICT_MODE=$STRICT_MODE"
+
+          # Gather submodule keys from .gitmodules
+          mapfile -t KEYS < <(git config -f .gitmodules --get-regexp '^submodule\\..*\\.path$' | awk '{print $1}')
+          if [ ${#KEYS[@]} -eq 0 ]; then
+            echo "No submodules defined; nothing to check."
+            exit 0
+          fi
+
+          fail=0
+          for key in "${KEYS[@]}"; do
+            name="${key#submodule.}"
+            name="${name%.path}"
+            path=$(git config -f .gitmodules --get "$key")
+            url=$(git config -f .gitmodules --get "submodule.$name.url")
+
+            echo "::group::Checking $name ($path)"
+            sha=$(git ls-tree HEAD "$path" | awk '{print $3}')
+            echo "Pointer: $sha"
+
+            # Ensure remote present and fetch all refs + tags
+            git -C "$path" remote get-url origin >/dev/null 2>&1 || git -C "$path" remote add origin "$url"
+            git -C "$path" fetch --prune --tags --force origin
+
+            # Commit must be reachable by some remote branch or tag
+            if git -C "$path" branch -r --contains "$sha" | grep -q \.; then
+              echo "OK: commit is reachable from a remote branch"
+            elif git -C "$path" tag --points-at "$sha" | grep -q \.; then
+              echo "OK: commit has a tag"
+            else
+              echo "::error:: $path points to $sha not reachable by any remote branch/tag"
+              fail=1
+            fi
+
+            # Tag presence check (strict on release/* PRs)
+            tags=$(git -C "$path" tag --points-at "$sha" || true)
+            if [ -z "$tags" ]; then
+              if [ "$STRICT_MODE" = "true" ]; then
+                echo "::error:: $path must point to a tag in strict mode (release/* PR)"
+                fail=1
+              else
+                echo "::notice:: $path does not point to a tag"
+              fi
+            else
+              echo "Tag(s): $tags"
+            fi
+            echo "::endgroup::"
+          done
+
+          exit $fail
