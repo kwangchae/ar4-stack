@@ -21,6 +21,29 @@ ar4-stack/                    ← 메타 저장소
 └── README.md                 ← 이 파일
 ```
 
+## 🐳 Docker로 실행 (ROS2 서버)
+
+Unity는 Windows에서 실행하고, ROS2 TCP 서버만 컨테이너로 실행하는 구성을 권장합니다.
+
+### 1) 이미지 빌드
+```bash
+docker compose build
+```
+
+### 2) ROS TCP 서버 실행
+```bash
+docker compose up
+```
+- 컨테이너가 포트 `10000`을 열고 `0.0.0.0:10000`에서 대기합니다.
+- Unity의 ROS 설정은 기존과 동일하게 WSL2/호스트 IP + 포트 `10000`을 사용하면 됩니다.
+
+### 3) 권장 옵션
+- 호스트 파일 권한 보존: `user` 옵션으로 UID/GID 매핑
+  - `docker compose run --rm --user "$(id -u):$(id -g)" ros bash`
+- 실기(USB) 연결 시: `--privileged`와 `--device=/dev/ttyUSB0` 등을 추가하여 별도 서비스 구성
+
+참고: 컨테이너는 `./ros2-ar4-ws`를 `/ws`로 마운트하여 빌드/실행합니다.
+
 ## 🚀 완전 초보자 가이드
 
 ### 🔧 사전 준비사항
@@ -393,6 +416,10 @@ ros2 node info /move_group
 - 태그: `v{MAJOR}.{MINOR}.{PATCH}` (SemVer)
 - 정책 문서: [VERSIONING.md](./VERSIONING.md) 참고 (서브모듈 bump/릴리스 절차 포함)
 - CI 가드: PR에서 서브모듈 포인터가 원격 브랜치/태그에 도달 가능한지 검사하며, `release/*` PR에서는 태그를 요구합니다. 워크플로우: `.github/workflows/submodule-guard.yml`
+
+## 🧾 변경 로그
+
+- 프로젝트의 변경 내역은 [CHANGELOG.md](./CHANGELOG.md)에 기록됩니다.
 
 ## ✅ 설치 검증
 

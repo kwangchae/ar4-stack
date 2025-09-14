@@ -1,0 +1,22 @@
+services:
+  ros:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ar4_ros2
+    working_dir: /ws
+    volumes:
+      - ./ros2-ar4-ws:/ws
+    ports:
+      - "10000:10000"
+    # Tip: avoid root-owned files by running with your UID/GID
+    # user: "${UID:-1000}:${GID:-1000}"
+    command: >-
+      bash -lc "
+        rosdep update && \
+        rosdep install --from-paths . --ignore-src -r -y && \
+        colcon build --symlink-install && \
+        source install/setup.bash && \
+        ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
+      "
+
