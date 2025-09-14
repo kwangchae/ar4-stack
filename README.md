@@ -58,9 +58,9 @@ sudo rosdep init
 rosdep update
 ```
 
-#### 3. Unity Hub 및 Unity 2022.3 LTS 설치 (Windows)
+#### 3. Unity Hub 및 Unity 6000.2.3f1 설치 (Windows)
 1. [Unity Hub 다운로드](https://unity3d.com/get-unity/download)
-2. Unity Hub에서 **Unity 2022.3 LTS** 설치
+2. Unity Hub에서 **Unity 6000.2.3f1** 설치
 3. **Windows Build Support** 모듈 포함하여 설치
 
 ### 📦 프로젝트 설치
@@ -233,7 +233,7 @@ git push --tags
 - **운영체제**: Windows 11 (WSL2 지원)
 - **WSL2**: Ubuntu 24.04 LTS
 - **ROS2**: Jazzy Jellyfish
-- **Unity**: 2022.3 LTS 또는 2023.3 LTS
+- **Unity**: 6000.2.3f1 (권장)
 - **Python**: 3.10+ (Ubuntu 24.04 기본)
 - **Git**: 최신 버전
 
