@@ -176,18 +176,20 @@ python3 src/smooth_robot_controller.py
 
 ### 개발 워크플로우
 ```bash
-# 1. 서브모듈 업데이트
-git submodule update --remote
+# 1. 서브모듈 초기화/동기화
+git submodule update --init --recursive
 
 # 2. 각 서브모듈에서 작업
 cd ros2-ar4-ws
 git checkout -b feature/new-controller
-# 작업 후 커밋 & 푸시
+# 작업 후 커밋 & 푸시 (PR 머지)
 
-# 3. 메타 저장소 업데이트
+# 3. 상위 리포에서 서브모듈 포인터 업데이트
 cd ..
+git -C ros2-ar4-ws pull --ff-only          # 또는 특정 태그로 고정
+# git -C ros2-ar4-ws checkout vX.Y.Z       # 태그로 고정하는 경우
 git add ros2-ar4-ws
-git commit -m "Update ROS2 workspace to latest"
+git commit -m "chore: bump ros2-ar4-ws submodule"
 ```
 
 ### 배포 워크플로우
@@ -261,8 +263,10 @@ git push --tags
 # 서브모듈이 제대로 클론되지 않은 경우
 git submodule update --init --recursive
 
-# 서브모듈을 최신 상태로 업데이트
-git submodule update --remote --merge
+# 서브모듈을 최신 상태로 업데이트(검증용)
+git submodule update --remote --ff-only
+# 주의: 정식 반영은 서브모듈에서 PR/태그 후 상위 리포에서 포인터를 bump 합니다.
+# 자세한 정책은 VERSIONING.md 참고
 ```
 
 #### 2. ROS2 빌드 실패
@@ -381,9 +385,9 @@ ros2 node info /move_group
 
 ## 📝 버전 관리
 
-- **메인 브랜치**: `main` (안정 버전)
-- **개발 브랜치**: `develop` (최신 개발)
-- **태그 규칙**: `v{major}.{minor}.{patch}`
+- 브랜치: trunk-based (`main` 안정 유지, 기능은 `feature/*`, 필요 시 `release/x.y`)
+- 태그: `v{MAJOR}.{MINOR}.{PATCH}` (SemVer)
+- 정책 문서: VERSIONING.md 참고 (서브모듈 bump/릴리스 절차 포함)
 
 ## ✅ 설치 검증
 
