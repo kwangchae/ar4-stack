@@ -2,6 +2,10 @@
 
 **통합 AR4 로봇 제어 시스템** - ROS2 워크스페이스와 Unity 시뮬레이션을 서브모듈로 통합한 메타 저장소입니다.
 
+## 📑 목차
+
+- 버전 관리 정책: [VERSIONING.md](./VERSIONING.md)
+
 ## 🏗️ 아키텍처
 
 ```
@@ -387,7 +391,8 @@ ros2 node info /move_group
 
 - 브랜치: trunk-based (`main` 안정 유지, 기능은 `feature/*`, 필요 시 `release/x.y`)
 - 태그: `v{MAJOR}.{MINOR}.{PATCH}` (SemVer)
-- 정책 문서: VERSIONING.md 참고 (서브모듈 bump/릴리스 절차 포함)
+- 정책 문서: [VERSIONING.md](./VERSIONING.md) 참고 (서브모듈 bump/릴리스 절차 포함)
+- CI 가드: PR에서 서브모듈 포인터가 원격 브랜치/태그에 도달 가능한지 검사하며, `release/*` PR에서는 태그를 요구합니다. 워크플로우: `.github/workflows/submodule-guard.yml`
 
 ## ✅ 설치 검증
 
