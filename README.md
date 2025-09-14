@@ -17,36 +17,145 @@ ar4-stack/                    ← 메타 저장소
 └── README.md                 ← 이 파일
 ```
 
-## 🚀 빠른 시작
+## 🚀 완전 초보자 가이드
 
-### 1. 전체 시스템 클론
+### 🔧 사전 준비사항
+
+#### 1. Windows 11 + WSL2 설치
+```powershell
+# PowerShell 관리자 모드에서 실행
+wsl --install Ubuntu-24.04
+wsl --set-default-version 2
+```
+
+#### 2. ROS2 Jazzy 설치 (WSL2 Ubuntu 24.04)
 ```bash
+# 시스템 업데이트
+sudo apt update && sudo apt upgrade -y
+
+# ROS2 키 및 저장소 추가
+sudo apt install software-properties-common
+sudo add-apt-repository universe
+sudo apt update && sudo apt install curl -y
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# ROS2 Jazzy 설치
+sudo apt update
+sudo apt install ros-jazzy-desktop python3-argcomplete -y
+sudo apt install python3-colcon-common-extensions python3-pip python3-rosdep -y
+
+# 환경 설정 자동화
+echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+
+# rosdep 초기화
+sudo rosdep init
+rosdep update
+```
+
+#### 3. Unity Hub 및 Unity 2022.3 LTS 설치 (Windows)
+1. [Unity Hub 다운로드](https://unity3d.com/get-unity/download)
+2. Unity Hub에서 **Unity 2022.3 LTS** 설치
+3. **Windows Build Support** 모듈 포함하여 설치
+
+### 📦 프로젝트 설치
+
+#### 1. 전체 시스템 클론
+```bash
+# WSL2 Ubuntu에서 실행
 git clone --recursive https://github.com/kwangchae/ar4-stack.git
 cd ar4-stack
+
+# 서브모듈이 제대로 클론되었는지 확인
+ls -la ros2-ar4-ws/ unity-ar4-sim/
 ```
 
-### 2. ROS2 환경 설정
+#### 2. ROS2 워크스페이스 빌드
 ```bash
 cd ros2-ar4-ws
-colcon build
+
+# 의존성 설치
+rosdep install --from-paths . --ignore-src -r -y
+
+# 워크스페이스 빌드
+colcon build --symlink-install
+
+# 환경 설정 로드
 source install/setup.bash
+
+# 빌드 확인
+ros2 pkg list | grep annin
 ```
 
-### 3. ROS TCP 서버 시작
+#### 3. Unity 프로젝트 설정
 ```bash
+# WSL2에서 IP 주소 확인 (Unity 설정에 필요)
+hostname -I
+# 출력 예: 172.27.144.1 (이 값을 기억해두세요)
+```
+
+**Unity에서 설정:**
+1. Unity Hub에서 `ar4-stack/unity-ar4-sim` 폴더를 **프로젝트로 추가**
+2. 프로젝트 열기
+3. **Package Manager** 열기 (`Window > Package Manager`)
+4. **[+] > Add package from git URL** 선택하고 다음 URL들을 **순서대로** 추가:
+   ```
+   https://github.com/Unity-Technologies/URDF-Importer.git?path=/com.unity.robotics.urdf-importer#v0.5.2
+   https://github.com/Unity-Technologies/ROS-TCP-Connector.git?path=/com.unity.robotics.ros-tcp-connector#v0.7.0
+   ```
+5. **Robotics > ROS Settings** 메뉴 열기
+6. 다음과 같이 설정:
+   - **ROS IP Address**: WSL2 IP (예: `172.27.144.1`)
+   - **ROS Port**: `10000`
+   - **Protocol**: `TCP`
+
+### 🎯 실행 가이드
+
+#### 터미널 1: ROS TCP 서버 시작
+```bash
+cd ar4-stack/ros2-ar4-ws
+source install/setup.bash
 ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
 ```
+✅ **성공 메시지**: `Starting server on 0.0.0.0:10000`
 
-### 4. Unity 프로젝트 실행
+#### 터미널 2: MoveIt 실행
 ```bash
-cd ../unity-ar4-sim
-# Unity Hub에서 프로젝트 열기
-```
-
-### 5. MoveIt 실행
-```bash
-cd ros2-ar4-ws
+cd ar4-stack/ros2-ar4-ws
+source install/setup.bash
 ros2 launch annin_ar4_moveit_config demo.launch.py
+```
+✅ **성공 메시지**: RViz 창이 열리고 AR4 로봇 모델이 표시됨
+
+#### Unity 실행
+1. Unity에서 **Play** 버튼 클릭
+2. **터미널 1**에서 연결 메시지 확인:
+   ```
+   Connection from 172.27.144.1
+   RegisterSubscriber(...) OK
+   RegisterPublisher(...) OK
+   ```
+
+### 🎮 사용법
+
+#### RViz에서 로봇 제어
+1. RViz에서 **MotionPlanning** 패널 확인
+2. **Interactive Marker**를 드래그하여 목표 위치 설정
+3. **Plan** 버튼 클릭 → Unity에서 노란색 waypoint 확인
+4. **Execute** 버튼 클릭 → Unity 로봇이 움직임
+
+#### 추가 제어 스크립트 (선택사항)
+```bash
+# 터미널 3: 키보드 제어
+cd ar4-stack/ros2-ar4-ws
+source install/setup.bash
+python3 src/simple_keyboard_teleop.py
+
+# 터미널 4: 부드러운 로봇 제어
+cd ar4-stack/ros2-ar4-ws
+source install/setup.bash
+python3 src/smooth_robot_controller.py
 ```
 
 ## 🎯 주요 기능
@@ -112,16 +221,27 @@ git push --tags
 
 ## 🛠️ 개발 환경
 
-### 필수 요구사항
-- **WSL2**: Ubuntu 24.04+ 
-- **ROS2**: Jazzy Jellyfish
-- **Unity**: 2022.3 LTS
-- **Python**: 3.8+
+### 📋 시스템 요구사항
 
-### 권장 도구
-- **VS Code**: ROS 확장 프로그램
-- **RViz**: 시각화 및 디버깅
-- **Unity Hub**: 프로젝트 관리
+#### 필수 요구사항
+- **운영체제**: Windows 11 (WSL2 지원)
+- **WSL2**: Ubuntu 24.04 LTS
+- **ROS2**: Jazzy Jellyfish
+- **Unity**: 2022.3 LTS 또는 2023.3 LTS
+- **Python**: 3.10+ (Ubuntu 24.04 기본)
+- **Git**: 최신 버전
+
+#### 하드웨어 권장사양
+- **CPU**: 4코어 이상 (8코어 권장)
+- **RAM**: 16GB 이상 (32GB 권장)
+- **GPU**: DirectX 11 지원 (Unity 렌더링용)
+- **저장공간**: 20GB 이상 여유공간
+
+#### 권장 개발 도구
+- **VS Code**: ROS 및 Python 확장 프로그램
+- **Windows Terminal**: 멀티 탭 터미널
+- **Git GUI**: GitHub Desktop 또는 SourceTree
+- **Unity Hub**: 프로젝트 및 버전 관리
 
 ## 📊 주요 토픽
 
@@ -134,30 +254,130 @@ git push --tags
 
 ## 🔧 문제 해결
 
-### 서브모듈 문제
+### ❗ 일반적인 문제들
+
+#### 1. 서브모듈이 비어있는 경우
 ```bash
-# 서브모듈이 비어있을 때
+# 서브모듈이 제대로 클론되지 않은 경우
 git submodule update --init --recursive
 
-# 서브모듈 최신 상태로 업데이트
+# 서브모듈을 최신 상태로 업데이트
 git submodule update --remote --merge
 ```
 
-### Unity 연결 문제
+#### 2. ROS2 빌드 실패
 ```bash
-# WSL2 IP 확인
+# 의존성 문제 해결
+cd ros2-ar4-ws
+rosdep install --from-paths . --ignore-src -r -y
+
+# 클린 빌드
+colcon build --symlink-install --cmake-clean-cache
+source install/setup.bash
+
+# 특정 패키지만 빌드
+colcon build --packages-select annin_ar4_description
+```
+
+#### 3. Unity 연결 문제
+**증상**: Unity에서 "Connection failed" 오류
+```bash
+# WSL2 IP 주소 재확인
 hostname -I
 
-# 방화벽 설정 (Windows)
-New-NetFirewallRule -DisplayName "ROS-Unity" -Direction Inbound -Protocol TCP -LocalPort 10000 -Action Allow
+# TCP 서버 포트 확인
+netstat -tlnp | grep 10000
+
+# TCP 서버 프로세스 종료 후 재시작
+pkill -f default_server_endpoint
+ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
 ```
 
-### ROS2 빌드 문제
-```bash
-cd ros2-ar4-ws
-colcon build --symlink-install
-source install/setup.bash
+**Windows 방화벽 설정** (PowerShell 관리자 모드):
+```powershell
+New-NetFirewallRule -DisplayName "ROS-Unity-TCP" -Direction Inbound -Protocol TCP -LocalPort 10000 -Action Allow
+New-NetFirewallRule -DisplayName "ROS-Unity-TCP-Out" -Direction Outbound -Protocol TCP -LocalPort 10000 -Action Allow
 ```
+
+#### 4. Unity 패키지 설치 실패
+```bash
+# Unity Package Manager에서 오류 발생 시
+# 1. Unity 재시작
+# 2. Package Manager > In Project > Reset Packages to defaults
+# 3. 패키지를 하나씩 순서대로 재설치:
+#    - URDF Importer 먼저
+#    - ROS TCP Connector 나중에
+```
+
+#### 5. MoveIt 실행 오류
+```bash
+# MoveIt 설정 파일 누락 문제
+cd ros2-ar4-ws
+source install/setup.bash
+
+# 패키지 설치 확인
+ros2 pkg list | grep annin_ar4
+
+# MoveIt 데모 실행 (시뮬레이션만)
+ros2 launch annin_ar4_moveit_config demo.launch.py
+
+# 로그 확인
+ros2 launch annin_ar4_moveit_config demo.launch.py --ros-args --log-level DEBUG
+```
+
+#### 6. Python 스크립트 실행 오류
+```bash
+# Python 의존성 설치
+pip3 install numpy scipy matplotlib
+
+# 스크립트 실행 권한 확인
+chmod +x src/*.py
+
+# ROS 환경 로드 확인
+echo $ROS_DISTRO  # jazzy가 출력되어야 함
+```
+
+### 🆘 고급 문제 해결
+
+#### WSL2 네트워크 문제
+```bash
+# WSL2와 Windows 간 네트워크 연결 확인
+ping $(hostname -I | cut -d' ' -f1)
+
+# WSL2 재시작
+wsl --shutdown
+wsl
+```
+
+#### Unity 성능 최적화
+```
+Unity Editor Settings:
+1. Edit > Project Settings > Player
+2. Configuration: Release
+3. Scripting Backend: IL2CPP
+4. Api Compatibility Level: .NET Standard 2.1
+```
+
+### 🔍 로그 및 디버깅
+
+#### ROS2 노드 상태 확인
+```bash
+# 실행 중인 노드 확인
+ros2 node list
+
+# 토픽 목록 확인
+ros2 topic list
+
+# 특정 토픽 메시지 확인
+ros2 topic echo /joint_states
+
+# 노드 정보 확인
+ros2 node info /move_group
+```
+
+#### Unity 로그 확인
+- Unity Console 창: `Window > General > Console`
+- ROS TCP Connector 로그: `Robotics > ROS Settings > Show/Hide ROS TCP Connector Logs`
 
 ## 📝 버전 관리
 
@@ -165,13 +385,177 @@ source install/setup.bash
 - **개발 브랜치**: `develop` (최신 개발)
 - **태그 규칙**: `v{major}.{minor}.{patch}`
 
+## ✅ 설치 검증
+
+### 🔍 정상 설치 확인 체크리스트
+
+#### 1. ROS2 설치 확인
+```bash
+# ROS2 버전 확인
+ros2 --version  # ros2 cli version 0.x.x 출력
+
+# ROS 환경 변수 확인
+echo $ROS_DISTRO  # jazzy 출력
+
+# ROS2 노드 테스트
+ros2 run demo_nodes_py listener &
+ros2 run demo_nodes_py talker
+# "Hello World: X" 메시지가 계속 출력되면 성공
+```
+
+#### 2. 워크스페이스 빌드 확인
+```bash
+cd ar4-stack/ros2-ar4-ws
+source install/setup.bash
+
+# AR4 패키지 설치 확인
+ros2 pkg list | grep annin_ar4
+# 다음이 모두 출력되어야 함:
+# - annin_ar4_description
+# - annin_ar4_driver
+# - annin_ar4_moveit_config
+# - annin_ar4_gazebo
+
+# URDF 파일 확인
+ros2 launch annin_ar4_description display.launch.py
+# RViz가 열리고 AR4 로봇 모델이 표시되면 성공
+```
+
+#### 3. Unity 연결 확인
+```bash
+# TCP 서버 실행
+ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
+
+# Unity에서 Play 후 연결 메시지 확인:
+# [INFO] [timestamp] [UnityEndpoint]: Connection from 172.x.x.x
+```
+
+### 📺 데모 영상 따라하기
+
+성공적인 설치 후 다음 데모를 실행해보세요:
+
+#### 🎥 기본 MoveIt 데모
+```bash
+# 터미널 1: TCP 서버
+ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
+
+# 터미널 2: MoveIt 데모
+ros2 launch annin_ar4_moveit_config demo.launch.py
+
+# Unity에서 Play 버튼 클릭
+# RViz에서 Interactive Marker를 드래그하여 Plan & Execute
+```
+
+#### 🎮 키보드 제어 데모
+```bash
+# 터미널 3: 키보드 제어
+python3 src/simple_keyboard_teleop.py
+
+# 키보드로 로봇 제어:
+# q/a: 관절 1, w/s: 관절 2, e/d: 관절 3
+# r/f: 관절 4, t/g: 관절 5, y/h: 관절 6
+```
+
 ## 🤝 기여 가이드
 
-1. **이슈 생성**: 버그 리포트 또는 기능 요청
-2. **브랜치 생성**: `feature/` 또는 `bugfix/` 접두사
-3. **서브모듈 작업**: 각 서브모듈에서 별도 작업
-4. **메타 저장소 업데이트**: 서브모듈 변경사항 반영
-5. **PR 생성**: 상세한 설명과 함께
+### 🛠️ 개발 워크플로우
+
+#### 1. 이슈 및 기능 요청
+- **버그 리포트**: 재현 가능한 단계 포함
+- **기능 요청**: 구체적인 사용 사례 설명
+- **개선 제안**: 현재 문제점과 해결책 제시
+
+#### 2. 브랜치 전략
+```bash
+# 메인 브랜치에서 새 기능 브랜치 생성
+git checkout -b feature/your-feature-name
+
+# 버그 수정용 브랜치
+git checkout -b bugfix/issue-description
+
+# 문서 개선용 브랜치
+git checkout -b docs/update-readme
+```
+
+#### 3. 서브모듈 개발
+```bash
+# ROS2 워크스페이스 작업
+cd ros2-ar4-ws
+git checkout -b feature/new-controller
+# 개발 작업...
+git add . && git commit -m "Add new controller"
+git push origin feature/new-controller
+
+# Unity 프로젝트 작업
+cd ../unity-ar4-sim
+git checkout -b feature/ui-improvement
+# 개발 작업...
+git add . && git commit -m "Improve UI layout"
+git push origin feature/ui-improvement
+
+# 메타 저장소에서 서브모듈 업데이트
+cd ..
+git add ros2-ar4-ws unity-ar4-sim
+git commit -m "Update submodules with new features"
+```
+
+#### 4. 풀 리퀘스트 가이드
+- **제목**: 간결하고 명확한 변경사항 요약
+- **설명**: 상세한 변경 내용과 테스트 결과
+- **체크리스트**:
+  - [ ] 코드가 빌드되는지 확인
+  - [ ] 기존 기능이 정상 동작하는지 확인
+  - [ ] 새 기능에 대한 테스트 추가
+  - [ ] README 업데이트 (필요시)
+
+### 🧪 테스트 가이드
+
+#### 코드 변경 시 필수 테스트
+```bash
+# 1. ROS2 빌드 테스트
+cd ros2-ar4-ws
+colcon build --symlink-install
+source install/setup.bash
+
+# 2. MoveIt 데모 실행 테스트
+ros2 launch annin_ar4_moveit_config demo.launch.py
+
+# 3. Unity 연결 테스트
+ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
+# Unity에서 Play 후 연결 확인
+
+# 4. 기본 제어 스크립트 테스트
+python3 src/simple_keyboard_teleop.py
+```
+
+### 📝 커밋 메시지 규칙
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**타입**:
+- `feat`: 새 기능
+- `fix`: 버그 수정
+- `docs`: 문서 변경
+- `style`: 코드 스타일 변경
+- `refactor`: 리팩토링
+- `test`: 테스트 추가/수정
+- `chore`: 기타 작업
+
+**예시**:
+```
+feat(moveit): add trajectory smoothing algorithm
+
+- Implement cubic spline interpolation for smoother robot motion
+- Add configurable velocity and acceleration limits
+- Update MoveIt configuration for improved performance
+
+Closes #123
+```
 
 ## 📚 관련 링크
 
