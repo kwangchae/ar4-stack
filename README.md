@@ -167,6 +167,16 @@ ros2 launch annin_ar4_moveit_config demo.launch.py
 ```
 ✅ **성공 메시지**: RViz 창이 열리고 AR4 로봇 모델이 표시됨
 
+#### 터미널 3: MoveIt ↔ Unity 브리지 실행
+```bash
+cd ar4-stack/ros2-ar4-ws
+source install/setup.bash
+python3 src/moveit_bridge.py
+```
+✅ **효과**:
+- Plan 수행 시: Unity에 `/trajectory_preview`로 웨이포인트 스트림 전송 → 노란 웨이포인트 표시
+- Execute 수행 시: 컨트롤러 토픽 또는 실행 액션 상태를 감지하여 `/joint_command`로 포인트들을 순차 전송 → Unity 로봇이 따라감
+
 #### Unity 실행
 1. Unity에서 **Play** 버튼 클릭
 2. **터미널 1**에서 연결 메시지 확인:
