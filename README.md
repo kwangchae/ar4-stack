@@ -44,6 +44,18 @@ docker compose up
 
 참고: 컨테이너는 `./ros2-ar4-ws`를 `/ws`로 마운트하여 빌드/실행합니다.
 
+### 4) 실기 연결용 서비스 (USB)
+```bash
+# 기본 서버(소프트 시뮬레이션):
+docker compose up ros
+
+# 하드웨어(USB) 연결용:
+docker compose up ros-hw
+```
+- `ros-hw` 서비스는 `--privileged`와 `/dev/ttyUSB0`, `/dev/ttyACM0` 디바이스를 컨테이너에 전달합니다.
+- 다른 포트를 쓴다면 `devices` 매핑을 수정하세요. (예: `/dev/ttyUSB1`)
+- 권한 이슈가 있으면 `group_add: [dialout]`가 적용된 이 서비스를 사용하거나, `user: "$(id -u):$(id -g)"` 옵션을 추가하세요.
+
 ## 🚀 완전 초보자 가이드
 
 ### 🔧 사전 준비사항

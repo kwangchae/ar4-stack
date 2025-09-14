@@ -20,3 +20,29 @@ services:
         ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
       "
 
+  # Hardware-enabled service (serial/USB access)
+  ros-hw:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ar4_ros2_hw
+    working_dir: /ws
+    volumes:
+      - ./ros2-ar4-ws:/ws
+    ports:
+      - "10000:10000"
+    privileged: true
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+      - "/dev/ttyACM0:/dev/ttyACM0"
+    group_add:
+      - dialout
+    # user: "${UID:-1000}:${GID:-1000}"
+    command: >-
+      bash -lc "
+        rosdep update && \
+        rosdep install --from-paths . --ignore-src -r -y && \
+        colcon build --symlink-install && \
+        source install/setup.bash && \
+        ros2 run ros_tcp_endpoint default_server_endpoint --ros-args -p ROS_IP:=0.0.0.0
+      "
