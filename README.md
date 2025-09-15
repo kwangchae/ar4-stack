@@ -56,6 +56,16 @@ docker compose up ros-hw
 - 다른 포트를 쓴다면 `devices` 매핑을 수정하세요. (예: `/dev/ttyUSB1`)
 - 권한 이슈가 있으면 `group_add: [dialout]`가 적용된 이 서비스를 사용하거나, `user: "$(id -u):$(id -g)"` 옵션을 추가하세요.
 
+### (대안) 로컬에서 서버+브리지 한 번에 실행
+```bash
+cd ar4-stack/ros2-ar4-ws
+./scripts/run_server_and_bridge.sh \
+  # 선택 환경변수: \
+  # ROS_IP=0.0.0.0 ROS_TCP_PORT=10000 \
+  # CONTROLLER_NAME=joint_trajectory_controller \
+  # PREVIEW_TOPIC=/trajectory_preview COMMAND_TOPIC=/joint_command
+```
+
 ## 🚀 완전 초보자 가이드
 
 ### 🔧 사전 준비사항
